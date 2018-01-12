@@ -1,6 +1,6 @@
 from keras import backend as K
 from keras.models import Model
-from keras.layers import (BatchNormalization, Conv1D, Dense, Input, 
+from keras.layers import (BatchNormalization, Conv1D, Dense, Input, Dropout,
     TimeDistributed, Activation, Bidirectional, SimpleRNN, GRU, LSTM)
 
 def simple_rnn_model(input_dim, output_dim=29):
@@ -133,15 +133,43 @@ def bidirectional_rnn_model(input_dim, units, output_dim=29):
 def final_model():
     """ Build a deep network for speech 
     """
+
+    # parameters of the convolutional layer
+    filters = 200
+    kernel_size = 11
+    stride = 2
+
+    # number of units in recurrent layers
+    rnn_units = (200, 200, 200)
+
+    input_dim = 13 # use MFCC features
+    output_dim = 29
+
     # Main acoustic input
     input_data = Input(name='the_input', shape=(None, input_dim))
-    # TODO: Specify the layers in your network
-    ...
-    # TODO: Add softmax activation layer
-    y_pred = ...
+
+    # Specify the layers in your network
+    current_layer = input_data
+
+    current_layer = Conv1D(filters, kernel_size=kernel, strides=stride, padding='causal',
+                           activation='relu', name='conv_1')(current_layer)
+    current_layer = Dropout(0.5)(current_layer)
+    current_layer = BatchNormalization(name='bn_conv1')(current_layer)
+
+    for i in range(len(rnn_units)):
+        current_layer = GRU(rnn_units[i], activation='relu',
+                            return_sequences=True, name='rnn%d'%(i+1))(current_layer)
+        current_layer = BatchNormalization(name='bn_rnn%d'%(i+1))(current_layer)
+
+    current_layer = Dropout(0.2)(current_layer)
+
+    time_dense = TimeDistributed(Dense(output_dim), name='time_dense')(current_layer)
+    # Add softmax activation layer
+    y_pred = Activation('softmax', name='softmax')(time_dense)
     # Specify the model
     model = Model(inputs=input_data, outputs=y_pred)
-    # TODO: Specify model.output_length
-    model.output_length = ...
+    # Specify model.output_length
+    model.output_length = lambda x: cnn_output_length(x, kernel, 'same', stride)
+
     print(model.summary())
     return model
