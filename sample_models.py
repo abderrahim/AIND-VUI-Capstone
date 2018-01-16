@@ -151,7 +151,7 @@ def final_model():
     # Specify the layers in your network
     current_layer = input_data
 
-    current_layer = Conv1D(filters, kernel_size=kernel, strides=stride, padding='causal',
+    current_layer = Conv1D(filters, kernel_size=kernel_size, strides=stride, padding='causal',
                            activation='relu', name='conv_1')(current_layer)
     current_layer = Dropout(0.5)(current_layer)
     current_layer = BatchNormalization(name='bn_conv1')(current_layer)
@@ -169,7 +169,7 @@ def final_model():
     # Specify the model
     model = Model(inputs=input_data, outputs=y_pred)
     # Specify model.output_length
-    model.output_length = lambda x: cnn_output_length(x, kernel, 'same', stride)
+    model.output_length = lambda x: cnn_output_length(x, kernel_size, 'same', stride)
 
     print(model.summary())
     return model
